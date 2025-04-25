@@ -1,6 +1,7 @@
 using ChatApp.Web.Components;
 using ChatApp.Messaging.Interfaces;
 using ChatApp.Messaging.Services;
+using ChatApp.Messaging.Configuration;
 
 namespace ChatApp.Web
 {
@@ -14,15 +15,12 @@ namespace ChatApp.Web
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
-
             builder.Services.AddLogging(logging =>
             {
                 logging.AddConsole();
                 logging.AddDebug();
             });
-
-            builder.Services.AddLogging();
-            builder.Logging.AddConsole();
+            builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
             builder.Services.AddSingleton<IMessageQueueService, RabbitMqService>();
             builder.Services.AddHostedService<RabbitMqInitializerService>();
 
