@@ -1,0 +1,78 @@
+﻿@page "/"
+@using ChatApp.Core.Models
+@using ChatApp.Messaging.Interfaces
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IMessageQueueService MessageQueueService
+@inject IJSRuntime JS
+
+<PageTitle>@PageTitleConstants.ChatPage</PageTitle>
+
+<h3>Chat Room</h3>
+
+<div class="chat-box" @ref="chatBoxRef">
+    @foreach (var msg in Messages)
+    {
+        <div class="chat-message">
+            <b>@msg.Sender:</b> @msg.Message
+        </div>
+    }
+</div>
+
+<input @bind="UserName" placeholder="Your name" class="chat-input" />
+<input @bind="UserMessage" placeholder="Your message" @onkeyup="@HandleKeyPress" class="chat-input" />
+<button @onclick="@SendMessage">Send</button>
+
+@code {
+    private string UserMessage = string.Empty;
+    private string UserName = string.Empty;
+    private List<ChatMessageModel> Messages = [];
+    private ElementReference chatBoxRef;
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await MessageQueueService.StartConsumingAsync(OnMessageConsumed);
+    }
+
+    private async Task OnMessageConsumed(ChatMessageModel chatMessageModel)
+    {
+        Messages.Add(chatMessageModel);
+        await InvokeAsync(StateHasChanged);
+        await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", chatBoxRef);
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(UserMessage) || string.IsNullOrWhiteSpace(UserName)) 
+            return;
+
+        var message = new ChatMessageModel()
+        {
+            Sender = UserName,
+            Message = UserMessage
+        };
+
+        await MessageQueueService.PublishAsync(message);
+        UserMessage = string.Empty;
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // ChatMessageService.OnMessageReceived -= async (message) =>
+        // {
+        //     Messages.Add(message);
+        //     await InvokeAsync(StateHasChanged);
+        // };
+
+        await Task.CompletedTask;
+    }
+}
