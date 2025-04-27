@@ -3,9 +3,11 @@ using System.Text.Json;
 using ChatApp.Core.Models;
 using ChatApp.Messaging.Configuration;
 using ChatApp.Messaging.Interfaces;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace ChatApp.Messaging.Services
 {
@@ -13,11 +15,13 @@ namespace ChatApp.Messaging.Services
     {
         private IConnection _connection = null!;
         private IChannel _channel = null!;
+        private readonly ILogger<RabbitMqService> _logger;
         private readonly RabbitMqOptions _options = null!;
         private string _exchangeName = "";
 
-        public RabbitMqService(IOptions<RabbitMqOptions> options)
+        public RabbitMqService(ILogger<RabbitMqService> logger, IOptions<RabbitMqOptions> options)
         {
+            _logger = logger;
             _options = options.Value;
         }
 
@@ -32,8 +36,16 @@ namespace ChatApp.Messaging.Services
             };
             _exchangeName = _options.ExchangeName;
 
-            _connection = await factory.CreateConnectionAsync();
-            _channel = await _connection.CreateChannelAsync();
+            try
+            {
+                _connection = await factory.CreateConnectionAsync();
+                _channel = await _connection.CreateChannelAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical("Connection to RabbitMq could not be established!\n{Ex}", ex);
+                throw;
+            }
 
             await _channel.ExchangeDeclareAsync(
                 exchange: _options.ExchangeName,
@@ -44,9 +56,6 @@ namespace ChatApp.Messaging.Services
 
         public async Task PublishAsync(ChatMessageModel message)
         {
-            if (_channel is null)
-                throw new InvalidOperationException("RabbitMQ not initialized");
-
             var json = JsonSerializer.Serialize(message);
             var body = Encoding.UTF8.GetBytes(json);
 
@@ -59,9 +68,6 @@ namespace ChatApp.Messaging.Services
 
         public async Task StartConsumingAsync(Func<ChatMessageModel, Task> onMessageReceived)
         {
-            if (_channel is null) 
-                throw new InvalidOperationException("RabbitMQ not initialized");
-
             var declareOk = await _channel.QueueDeclareAsync(
                 queue: "",
                 durable: false,
@@ -91,8 +97,11 @@ namespace ChatApp.Messaging.Services
 
         public async ValueTask DisposeAsync()
         {
-            await _channel.CloseAsync();
-            await _connection.CloseAsync();
+            if (_channel is not null)
+                await _channel.CloseAsync();
+
+            if (_connection is not null)
+                await _connection.CloseAsync();
         }
     }
 }
