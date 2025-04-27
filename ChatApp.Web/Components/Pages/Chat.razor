@@ -5,11 +5,8 @@
 @implements IAsyncDisposable
 @inject IMessageQueueService MessageQueueService
 @inject IJSRuntime JS
-
 <PageTitle>@PageTitleConstants.ChatPage</PageTitle>
-
 <h3>Chat Room</h3>
-
 <div class="chat-box" @ref="chatBoxRef">
     @foreach (var msg in Messages)
     {
@@ -20,19 +17,29 @@
 </div>
 <div class="chat-input-container">
     <label for="usernameInput">Your name</label>
-    <input type="text" placeholder="Name" @bind="UserName" id="usernameInput" class="chat-input-username" />
+    <div class="chat-input-username-container">
+        <input type="text" placeholder="Name" @bind="UserName" id="usernameInput" class="chat-input-username" disabled="@IsUsernameLocked" />
+        @if (!IsUsernameLocked && !string.IsNullOrWhiteSpace(UserName))
+        {
+            <button @onclick="LockUsername" class="btn btn-sm btn-primary">Set Name</button>
+        }
+        @if (IsUsernameLocked)
+        {
+            <span class="chat-input-username-locked">✓ Username set</span>
+        }
+    </div>
     <div>
         <label for="messageInput">Your message</label>
-        <textarea placeholder="Message" @bind="UserMessage" id="messageInput" @onkeyup="@HandleKeyPress" class="chat-input-message" />
-        <button @onclick="@SendMessage">Send</button>
+        <textarea placeholder="Message" @bind="UserMessage" id="messageInput" @onkeyup="@HandleKeyPress" class="chat-input-message" disabled="@(!IsUsernameLocked)" />
+        <button @onclick="@SendMessage" disabled="@(!IsUsernameLocked)">Send</button>
     </div>
 </div>
-
 @code {
     private string UserMessage = string.Empty;
     private string UserName = string.Empty;
     private List<ChatMessageModel> Messages = [];
     private ElementReference chatBoxRef;
+    private bool IsUsernameLocked = false;
 
     protected async override Task OnAfterRenderAsync(bool firstRender)
     {
@@ -47,15 +54,23 @@
         await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", chatBoxRef);
     }
 
+    private void LockUsername()
+    {
+        if (!string.IsNullOrWhiteSpace(UserName))
+        {
+            IsUsernameLocked = true;
+        }
+    }
+
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(UserMessage) || string.IsNullOrWhiteSpace(UserName)) 
+        if (string.IsNullOrWhiteSpace(UserMessage) || !IsUsernameLocked)
             return;
 
         var message = new ChatMessageModel()
         {
-            Sender = UserName,
-            Message = UserMessage
+                Sender = UserName,
+                Message = UserMessage
         };
 
         await MessageQueueService.PublishAsync(message);
@@ -64,7 +79,7 @@
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" && IsUsernameLocked)
         {
             await SendMessage();
         }
@@ -72,12 +87,6 @@
 
     public async ValueTask DisposeAsync()
     {
-        // ChatMessageService.OnMessageReceived -= async (message) =>
-        // {
-        //     Messages.Add(message);
-        //     await InvokeAsync(StateHasChanged);
-        // };
-
         await Task.CompletedTask;
     }
 }
