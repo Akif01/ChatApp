@@ -22,7 +22,7 @@ namespace ChatApp.Web
             });
             builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
             builder.Services.AddSingleton<IMessageQueueService, RabbitMqService>();
-            builder.Services.AddHostedService<RabbitMqInitializerService>();
+            builder.Services.AddHostedService<MessageQueueInitializerService>();
 
             var app = builder.Build();
 
