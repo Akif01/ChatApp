@@ -100,6 +100,17 @@ h1:focus {
     min-height: 5rem;
 }
 
+.chat-input-username-locked {
+    color: green;
+    font-style: italic;
+}
+
+.chat-input-username-container {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
 /* Send button */
 button {
     padding: 0.6rem 1.2rem;
