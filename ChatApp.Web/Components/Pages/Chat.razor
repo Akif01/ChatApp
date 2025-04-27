@@ -14,14 +14,19 @@
     @foreach (var msg in Messages)
     {
         <div class="chat-message">
-            <b>@msg.Sender:</b> @msg.Message
+            <b>@msg.Sender @(msg.Sender == @UserName ? " (You)" : ""):</b> @msg.Message
         </div>
     }
 </div>
-
-<input @bind="UserName" placeholder="Your name" class="chat-input" />
-<input @bind="UserMessage" placeholder="Your message" @onkeyup="@HandleKeyPress" class="chat-input" />
-<button @onclick="@SendMessage">Send</button>
+<div class="chat-input-container">
+    <label for="usernameInput">Your name</label>
+    <input type="text" placeholder="Name" @bind="UserName" id="usernameInput" class="chat-input-username" />
+    <div>
+        <label for="messageInput">Your message</label>
+        <textarea placeholder="Message" @bind="UserMessage" id="messageInput" @onkeyup="@HandleKeyPress" class="chat-input-message" />
+        <button @onclick="@SendMessage">Send</button>
+    </div>
+</div>
 
 @code {
     private string UserMessage = string.Empty;

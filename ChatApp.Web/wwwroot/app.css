@@ -69,6 +69,7 @@ h1:focus {
     border-radius: 6px;
     background-color: #fff;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    word-break: break-all;
 }
 
 /* Differentiate sender name */
@@ -76,14 +77,27 @@ h1:focus {
     color: #2c3e50;
 }
 
+.chat-input-container {
+    display:flex;
+    flex-direction: column;
+}
+
 /* Inputs for name and message */
-.chat-input {
-    width: calc(100% - 1rem);
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    border: 1px solid #bbb;
-    border-radius: 4px;
+.chat-input-username, .chat-input-message {
     font-size: 1rem;
+    border: 1px solid #ccc;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.chat-input-username {
+    max-width: 200px;
+    margin-bottom: 1rem;
+}
+
+.chat-input-message {
+    width: 100%;
+    min-height: 5rem;
 }
 
 /* Send button */
