@@ -18,6 +18,9 @@ namespace ChatApp.Messaging.Services
             await _mqService.InitializeAsync();
         }
 
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public async Task StopAsync(CancellationToken cancellationToken) 
+        {
+            await _mqService.DisposeAsync();
+        }
     }
 }
